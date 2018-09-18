@@ -297,8 +297,7 @@ Function Get-VAMIStorageUsed {
      Organization:  VMware
      Blog:          www.virtuallyghetto.com
      Twitter:       @lamw
-     Updated for 6.7: Brad Calvert / @BlueArcher
-	===========================================================================
+    ===========================================================================
     .SYNOPSIS
         This function retrieves the individaul OS partition storage utilization
         for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
