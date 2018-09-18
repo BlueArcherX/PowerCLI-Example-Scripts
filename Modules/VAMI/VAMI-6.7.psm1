@@ -3,10 +3,6 @@
     .NOTES
     ===========================================================================
      Created by:    William Lam
-<<<<<<< HEAD
-=======
-     Updated for 6.7: Brad Calvert / @BlueArcher
->>>>>>> 2a834896bd32ce5b4a18d428c40ab4ddc4a3d762
      Organization:  VMware
      Blog:          www.virtuallyghetto.com
      Twitter:       @lamw
@@ -136,11 +132,16 @@ Function Get-VAMITime {
         Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
         Get-VAMITime
 #>
+    
+    #! FIXME
+
     $systemTimeAPI = Get-CisService -Name 'com.vmware.appliance.system.time'
     $timeResults = $systemTimeAPI.get()
 
-    $timeSync = (Get-CisService -Name 'com.vmware.appliance.techpreview.timesync').get()
-    $timeSyncMode = $timeSync.mode
+    $timeSync = (Get-CisService -Name 'com.vmware.appliance.timesync').get()
+    #mode no longer appears to be a thing in 6.7, "NTP" is just returned as the only item
+    #$timeSyncMode = $timeSync.mode
+    $timeSyncMode = $timeSync
 
     $timeResult  = [pscustomobject] @{
         Timezone = $timeResults.timezone;
@@ -152,9 +153,13 @@ Function Get-VAMITime {
     }
 
     if($timeSyncMode -eq "NTP") {
-        $ntpServers = (Get-CisService -Name 'com.vmware.appliance.techpreview.ntp').get()
-        $timeResult.NTPServers = $ntpServers.servers
-        $timeResult.NTPStatus = $ntpServers.status
+        $ntpServers = (Get-CisService -Name 'com.vmware.appliance.ntp').get()
+        #servers and status no longer appear to be available in 6.7.  The above simply returns the IP addess of my one NTP server in my lab
+        #$timeResult.NTPServers = $ntpServers.servers
+        $timeResult.NTPServers = $ntpServers
+        #$timeResult.NTPStatus = $ntpServers.status
+        #it looks like status has to come from test() but I can't get this working
+        
     }
     $timeResult
 }
@@ -177,6 +182,8 @@ Function Get-VAMINetwork {
         Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
         Get-VAMINetwork
 #>
+    #! FIXME
+
     $netResults = @()
 
     $Hostname = (Get-CisService -Name 'com.vmware.appliance.networking.dns.hostname').get()
@@ -187,7 +194,7 @@ Function Get-VAMINetwork {
 
     $interfaces = (Get-CisService -Name 'com.vmware.appliance.networking.interfaces').list()
     foreach ($interface in $interfaces) {
-        $ipv4API = (Get-CisService -Name 'com.vmware.appliance.techpreview.networking.ipv4')
+        $ipv4API = (Get-CisService -Name 'com.vmware.appliance.networking.$($interface.name).ipv4')
         $spec = $ipv4API.Help.get.interfaces.CreateExample()
         $spec+= $interface.name
         $ipv4result = $ipv4API.get($spec)
@@ -582,21 +589,22 @@ Function Get-VAMIUser {
         [String]$Name
     )
 
-    $userAPI = Get-CisService 'com.vmware.appliance.techpreview.localaccounts.user'
+    $userAPI = Get-CisService 'com.vmware.appliance.local_accounts'
 
     $userResults = @()
 
     if($Name -ne "") {
         try {
-            $user = $userAPI.get($name)
-
+            $user = $userAPI.get("$($name)")
             $userString = [pscustomobject] @{
-                User = $user.username
+                User = $name
                 Name = $user.fullname
                 Email = $user.email
-                Status = $user.status
-                PasswordStatus = $user.passwordstatus
-                Role = $user.role
+                Enabled = $user.enabled
+                LastPassChange = $user.last_password_change
+                PasswordExpires = $user.password_expires_at
+                HasPassword = $user.has_password
+                Role = $user.roles
             }
             $userResults += $userString
         } catch {
@@ -606,13 +614,16 @@ Function Get-VAMIUser {
         $users = $userAPI.list()
 
         foreach ($user in $users) {
+            $curUser = $userAPI.get("$($user)")
             $userString = [pscustomobject] @{
-                User = $user.username
-                Name = $user.fullname
-                Email = $user.email
-                Status = $user.status
-                PasswordStatus = $user.passwordstatus
-                Role = $user.role
+                User = $user
+                Name = $curUser.fullname
+                Email = $curUser.email
+                Enabled = $curUser.enabled
+                LastPassChange = $curUser.last_password_change
+                PasswordExpires = $curUser.password_expires_at
+                HasPassword = $curUser.has_password
+                Role = $curUser.roles
             }
             $userResults += $userString
         }
