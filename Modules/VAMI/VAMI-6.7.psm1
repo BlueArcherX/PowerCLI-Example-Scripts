@@ -3,6 +3,10 @@
     .NOTES
     ===========================================================================
      Created by:    William Lam
+<<<<<<< HEAD
+=======
+     Updated for 6.7: Brad Calvert / @BlueArcher
+>>>>>>> 2a834896bd32ce5b4a18d428c40ab4ddc4a3d762
      Organization:  VMware
      Blog:          www.virtuallyghetto.com
      Twitter:       @lamw
